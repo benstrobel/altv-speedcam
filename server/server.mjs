@@ -16,6 +16,10 @@ console.log('[Speedcam] Server-Side Loaded.');
 
 var camDict = {}
 
+alt.on("removeEntity", (entity) => {
+    alt.log(entity.type)
+})
+
 alt.onClient('speedcam:spawn', (player, pos, playerpos, heading) => {
     if(getValuesOfDict(camDict).filter((speecam) => {
         return speecam.owner === player;
@@ -81,10 +85,14 @@ function removeUserFromAllCams(player){
 }
 
 function deleteCamOfPlayer(player){
-    getValuesOfDict(camDict).filter((speedcam) => {
-        if (speedcam.player === player){
-            alt.emitClient(null, "speedcam:delete", speedcam.speedcamID);
-            camDict[speedcam.speedcamID] = undefined;
+    getValuesOfDict(camDict).forEach((speedcam) => {
+        if (speedcam.owner === player){
+            alt.emitClient(player, "speedcam:delete", speedcam.speedcamID);
+            alt.log(player)
+            alt.log(speedcam.speedcamID)
+            camDict[speedcam.speedcamID].useColShape.destroy()
+            camDict[speedcam.speedcamID].detectColShape.destroy()
+            delete camDict[speedcam.speedcamID];
             return true;
         }else{
             return false;
