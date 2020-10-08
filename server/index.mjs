@@ -1,35 +1,101 @@
 import * as alt from 'alt-server';
-import chat from 'chat';
 
-var camDict = {};
+let currentIndex = 0;
 
-alt.on('playerDeath', (player) => {
-    player.spawn(813, -279, 66, 5000);
-    player.giveWeapon(2210333304, 100, true);
-});
+class Speedcam{
+    constructor(owner, useColShape, detectColShape){
+        this.speedcamID = currentIndex++;
+        this.owner = owner;
+        this.useColShape = useColShape;
+        this.detectColShape = detectColShape;
+        this.users = [];
+    }
+}
+
+var camList = [];
+var camDict = {}
 
 alt.onClient('speedcam:spawn', (player, pos, playerpos, heading) => {
-    alt.emitClient(null, "speedcam:spawn", pos, heading);
-    const useCircle = new alt.ColshapeCircle(playerpos.x,playerpos.y,1);
-    camDict[player.id] = useCircle;
+    if(getValuesOfDict(camDict).filter((speecam) => {
+        return speecam.owner === player;
+    }).length >= 1){
+        deleteCamOfPlayer(player);
+    }
+    const useColShape = new alt.ColshapeCircle(playerpos.x,playerpos.y,1);
+    const detectColShape = new alt.ColshapeCircle(0,0,1);
+    const speedcam = new Speedcam(player,useColShape,detectColShape);
+    useColShape.setMeta("speedcamID", speedcam.speedcamID);
+    detectColShape.setMeta("speedcamID", speedcam.speedcamID);
+    camDict[speedcam.speedcamID] = speedcam;
+    alt.emitClient(null, "speedcam:spawn", speedcam.speedcamID, pos, heading);
 });
 
-alt.onClient('speedcam:delete', (player, entityID) =>{
-    alt.emitClient(null, "speedcam:delete", entityID);
-    camDict[entityID] = undefined;
+alt.onClient('speedcam:deleteown', (player) =>{
+    deleteCamOfPlayer(player);
 });
 
 alt.on('entityEnterColshape', (colshape, entity) => {
-    var values = Object.keys(camDict).map(function(key){
-        return camDict[key];
-    });
-    if(entity instanceof alt.Player && values.indexOf(colshape) != -1){
+    if(colshape.hasMeta("speedcamID")&& entity instanceof alt.Player){
         alt.emitClient(entity, "speedcam:showusehint");
+    }
+    if(colshape.hasMeta("speedcamID") && entity instanceof alt.Vehicle){
+        var speedcam = camDict[colshape.getMeta("speedcamID")];
+        speedcam.users.forEach( (user) => {
+            alt.emitClient(user, "speedcam:vehicleInDetectZone", entity.scriptID);
+        });
+        alt.log("Vehicle with licence palte '${entity.numberPlateText}' was detected")
     }
 });
 
 alt.onClient('speedcam:use', (player) => {
-    if (camDict[player.id].isEntityIn(player)){
+    var success = false;
+    getValuesOfDict(camDict).filter((speedcam) => {
+        speedcam.useColShape.isEntityIn(player);
+    }).forEach((speedcam) => {
+        success = true;
+        speedcam.users.push(player);
+    });
+    if (success){
         alt.emitClient(player, "speedcam:usecam");
     }
 });
+
+alt.onClient('speedcam:notusinganymore', (player) => {
+    removeUserFromAllCams(player);
+});
+
+alt.on('playerDisconnect', (player) => {
+    deleteCamOfPlayer(player);
+    removeUserFromAllCams(player);
+});
+
+function removeUserFromAllCams(player){
+    getValuesOfDict(camDict).forEach((speedcam) => {
+        speedcam.users = speedcam.users.filter((user) => {
+            return user !== player;
+        });
+    });
+}
+
+function deleteCamOfPlayer(player){
+    camList = getValuesOfDict(camDict).filter((speedcam) => {
+        if (speedcam.player !== player){
+            alt.emitClient(null, "speedcam:delete", speedcam.speedcamID);
+            return true;
+        }else{
+            return false;
+        }
+    });
+}
+
+function applyFuncToKeyValue(dict, func){
+    Object.keys(dict).forEach((key) => {
+        func(key,dict[key]);
+    });
+}
+
+function getValuesOfDict(dict){
+    return Object.keys(dict).map((key) => {
+        return dict[key];
+    });
+}

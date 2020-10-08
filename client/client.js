@@ -6,6 +6,8 @@ alt.log('Client-side has loaded!');
 const speedCamPlaceKey = 'B';
 const speedCamUseKey = 'E';
 
+camDict = {}
+
 alt.onServer('Server:Log', (msg1, msg2) => {
     alt.log(`Message From Server: ${msg1}`);
     alt.log(`Message From Server: ${msg2}`);
@@ -35,17 +37,12 @@ alt.on('keydown', (key) => {
     }
   });
 
-alt.onServer('speedcam:spawn', (pos, heading) => {
-  if(alt.Player.local.hasMeta("speedCamID")){
-    deleteSpeedCam();
-    spawnSpeedCam(pos, heading);
-  }else{
-    spawnSpeedCam(pos, heading);
-  }
+alt.onServer('speedcam:spawn', (speedcamID, pos, heading) => {
+  spawnSpeedCam(speedcamID, pos, heading);
 });
 
 alt.onServer('speedcam:delete', (speedCamID) => {
-  game.deleteEntity(speedCamID);
+  deleteSpeedCam(speedCamID);
 });
 
 alt.onServer('speedcam:showusehint', () => {
@@ -57,19 +54,33 @@ alt.onServer('speedcam:usecam', () => {
   startUseAnimation();
 });
 
+alt.onServer('speedcam:vehicleInDetectZone', (detectedEntityScriptID) => {
+  var isPlayerCurrentlyUsingCam = false; // TODO
+  if(isPlayerCurrentlyUsingCam){
+    var detectedvehicle = alt.Vehicle.getByScriptID(detectedEntityScriptID);
+    showNotification("", null, "CHAR_SOCIAL_CLUB", 7, "Speedcam", 'Fahrzeug erkannt', 0.5);
+    // TODO Infos zu vehicle anzeigen
+  }else{
+    alt.emitServer('speedcam:notusinganymore');
+  }
+});
 
-function deleteSpeedCam(){
-  game.deleteEntity(alt.Player.local.getMeta("speedCamID"));
-  alt.emitServer("speedcam:delete", alt.Player.local.getMeta("speedCamID"));
-  alt.Player.local.deleteMeta("speedCamID");
-}
 
-function spawnSpeedCam(pos, heading){
+function spawnSpeedCam(speedcamID, pos, heading){
   alt.log("Client Client Spawn Cam");
   const entityID = game.createObjectNoOffset(1355733718,pos.x,pos.y,pos.z);
+  camDict[speedcamID] = entityID;
   game.setEntityHeading(entityID, heading);
-  alt.Player.local.setMeta("speedCamID", entityID);
   return entityID;
+}
+
+function deleteSpeedCam(speedCamID){
+  game.deleteEntity(camDict[speedCamID]);
+  camDict[speedCamID] = undefined;
+}
+
+function deleteOwnSpeedCam(){
+  alt.emitServer("speedcam:deleteown");
 }
 
 function startUseAnimation(){
