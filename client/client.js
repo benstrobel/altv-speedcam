@@ -25,7 +25,7 @@ alt.on('keydown', (key) => {
           y: playerPos.y + playerForwardVector.y * 1,
           z: playerPos.z + playerForwardVector.z * 1
         }
-        alt.emitServer("speedcam:spawn", result, player.pos, heading);
+        alt.emitServer("speedcam:spawn", result, playerForwardVector, heading);
         alt.log("Client Server Spawn Cam");
       }
       if(key === speedCamUseKey.charCodeAt(0)){
@@ -43,20 +43,28 @@ alt.onServer('speedcam:delete', (speedCamID) => {
   deleteSpeedCam(speedCamID);
 });
 
-alt.onServer('speedcam:showusehint', () => {
-  showNotification("", null, "CHAR_SOCIAL_CLUB", 7, "Speedcam", 'Drücke E um den Blitzer zu benutzen', 0.5);
+alt.onServer('speedcam:showusehint', (status) => {
+  if(status){
+    showNotification('Drücke E um den Blitzer von deinem Handy zu trennen', null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
+  }else{
+    showNotification('Drücke E um den Blitzer mit deinem Handy zu verbinden', null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
+  }
 });
 
-alt.onServer('speedcam:usecam', () => {
-  alt.log("Starting use anim");
-  startUseAnimation();
+alt.onServer('speedcam:usecam', (status) => {
+  if(status){
+    showNotification('Dein Handy ist jetzt mit dem Blitzer verbunden. Drücke E um die Verbindung zu trennen.', null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
+  }else{
+    showNotification('Dein Handy ist jetzt vom Blitzer getrennt.', null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
+  }
+  
 });
 
 alt.onServer('speedcam:vehicleInDetectZone', (detectedEntityID, licensePlateText) => {
   var isPlayerCurrentlyUsingCam = true;
   if(isPlayerCurrentlyUsingCam){
     var detectedvehicle = alt.Vehicle.getByID(detectedEntityID);
-    showNotification(`Fahrzeug mit Nummernschild: \"${licensePlateText}\" fährt ${Math.round(game.getEntitySpeed(detectedvehicle.scriptID)*3.6)} Km/h`, null, "CHAR_SOCIAL_CLUB", 7, "Speedcam", "", 0.5);
+    showNotification(`Fahrzeug mit Nummernschild: \"${licensePlateText}\" fährt ${Math.round(game.getEntitySpeed(detectedvehicle.scriptID)*3.6)} Km/h`, null, "DIA_POLICE", 7, "Speedcam", "", 0.5);
   }else{
     alt.emitServer('speedcam:notusinganymore');
   }
@@ -80,19 +88,15 @@ function deleteOwnSpeedCam(){
   alt.emitServer("speedcam:deleteown");
 }
 
-function startUseAnimation(){
-  game.requestAnimDict("amb@world_human_binoculars@male@base");
-  alt.log(game.isEntityPlayingAnim(alt.Player.local.scriptID, "amb@world_human_binoculars@male@base", "base", 3));
-  game.taskPlayAnim(alt.Player.local.scriptID, "amb@world_human_binoculars@male@base", "base", 8.0, 1.0, -1, 1, 1.0, 0, 0, 0);
-  alt.log(game.isEntityPlayingAnim(alt.Player.local.scriptID, "amb@world_human_binoculars@male@base", "base", 3));  // TODO Warum hier auch false? Später benutzen für Zustandscheck
-}
-
-function showNotification(message, backgroundColor = null, notifImage = null, iconType = 0, title = "Title", subtitle = "subtitle", durationMult = 1) {
+function showNotification(message, backgroundColor = null, notifyImage = null, iconType = 0, title = "Title", subtitle = "subtitle", durationMult = 1) {
   game.beginTextCommandThefeedPost('STRING');
   game.addTextComponentSubstringPlayerName(message);
   if (backgroundColor != null)
     game.thefeedSetNextPostBackgroundColor(backgroundColor);
-  if (notifImage != null)
-    game.endTextCommandThefeedPostMessagetextTu(notifImage, notifImage, true, iconType, title, subtitle, durationMult);
+  if (notifyImage != null)
+  if(!game.hasStreamedTextureDictLoaded(notifyImage)){
+    game.requestStreamedTextureDict(notifyImage);
+  }
+  game.endTextCommandThefeedPostMessagetextTu(notifyImage, notifyImage, true, iconType, title, subtitle, durationMult);
   return game.endTextCommandThefeedPostMpticker(false, true);
 }
