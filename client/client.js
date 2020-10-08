@@ -6,7 +6,7 @@ alt.log('Client-side has loaded!');
 const speedCamPlaceKey = 'B';
 const speedCamUseKey = 'E';
 
-camDict = {}
+var camDict = {}
 
 alt.onServer('Server:Log', (msg1, msg2) => {
     alt.log(`Message From Server: ${msg1}`);
@@ -28,12 +28,10 @@ alt.on('keydown', (key) => {
         alt.emitServer("speedcam:spawn", result, player.pos, heading);
         alt.log("Client Server Spawn Cam");
       }
-    }
-  });
-
-  alt.on('keydown', (key) => {
-    if(key === speedCamUseKey.charCodeAt(0)){
-      alt.emitServer("speedcam:use");
+      if(key === speedCamUseKey.charCodeAt(0)){
+        alt.emitServer("speedcam:use");
+        alt.log("Client Use Cam");
+      }
     }
   });
 
@@ -54,12 +52,11 @@ alt.onServer('speedcam:usecam', () => {
   startUseAnimation();
 });
 
-alt.onServer('speedcam:vehicleInDetectZone', (detectedEntityScriptID) => {
-  var isPlayerCurrentlyUsingCam = false; // TODO
+alt.onServer('speedcam:vehicleInDetectZone', (detectedEntityID, licensePlateText) => {
+  var isPlayerCurrentlyUsingCam = true;
   if(isPlayerCurrentlyUsingCam){
-    var detectedvehicle = alt.Vehicle.getByScriptID(detectedEntityScriptID);
-    showNotification("", null, "CHAR_SOCIAL_CLUB", 7, "Speedcam", 'Fahrzeug erkannt', 0.5);
-    // TODO Infos zu vehicle anzeigen
+    var detectedvehicle = alt.Vehicle.getByID(detectedEntityID);
+    showNotification(`Fahrzeug mit Nummernschild: \"${licensePlateText}\" fährt ${Math.round(game.getEntitySpeed(detectedvehicle.scriptID)*3.6)} Km/h`, null, "CHAR_SOCIAL_CLUB", 7, "Speedcam", "", 0.5);
   }else{
     alt.emitServer('speedcam:notusinganymore');
   }
