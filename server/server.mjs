@@ -55,15 +55,6 @@ alt.on('entityEnterColshape', (colshape, entity) => {
     }
 });
 
-alt.on('entityExitColshape', (colshape, entity) => {
-    if(colshape.hasMeta("speedcamID") && colshape.getMeta("speedcamColShapeType") == "detect" && entity instanceof alt.Vehicle){
-        var speedcam = camDict[colshape.getMeta("speedcamID")];
-        speedcam.users.forEach( (user) => {
-            alt.emitClient(user, "speedcam:vehicleInDetectZone", entity.id, entity.numberPlateText);
-        });
-    }
-});
-
 alt.onClient('speedcam:use', (player) => {
     var success = false;
     var status = false;
