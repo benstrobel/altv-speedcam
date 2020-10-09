@@ -101,16 +101,19 @@ export function deleteOwnSpeedCam(){
 }
 
 export function placeSpeedCam() {
-  var playerPos = game.getEntityCoords(game.playerPedId());
-  var player = alt.Player.local;
-  var playerForwardVector = game.getEntityForwardVector(player.scriptID);
-  var heading = game.getEntityHeading(player.scriptID) + 180;
-  var result = {
-    x: playerPos.x + playerForwardVector.x * 1,
-    y: playerPos.y + playerForwardVector.y * 1,
-    z: playerPos.z + playerForwardVector.z * 1
+  if(!game.isPedInAnyVehicle(alt.Player.local.scriptID, true) && game.getEntityHealth(alt.Player.local.scriptID) > 100){
+    alt.log(game.getEntityHealth(alt.Player.local.scriptID));
+    var playerPos = game.getEntityCoords(game.playerPedId());
+    var player = alt.Player.local;
+    var playerForwardVector = game.getEntityForwardVector(player.scriptID);
+    var heading = game.getEntityHeading(player.scriptID) + 180;
+    var result = {
+      x: playerPos.x + playerForwardVector.x * 1,
+      y: playerPos.y + playerForwardVector.y * 1,
+      z: playerPos.z + playerForwardVector.z * 1
+    }
+    alt.emitServer("speedcam:spawn", result, playerForwardVector, heading);
   }
-  alt.emitServer("speedcam:spawn", result, playerForwardVector, heading);
 }
 
 export function useButtonFunction() {

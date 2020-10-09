@@ -3,12 +3,13 @@ import * as alt from 'alt-server';
 let currentIndex = 0;
 
 class Speedcam{
-    constructor(owner, useColShape, detectColShape){
+    constructor(owner, useColShape, detectColShape, pos){
         this.speedcamID = currentIndex++;
         this.owner = owner;
         this.useColShape = useColShape;
         this.detectColShape = detectColShape;
         this.users = [];
+        this.pos = pos;
     }
 }
 
@@ -29,12 +30,7 @@ alt.onClient('speedcam:spawn', (player, pos, forwardvector, heading) => {
         z: pos.z + forwardvector.z * 40
       }
     const detectColShape = new alt.ColshapeCylinder(result.x,result.y,result.z-20,40, 100);
-    const speedcam = new Speedcam(player,useColShape,detectColShape);
-    useColShape.setMeta("speedcamID", speedcam.speedcamID);
-    useColShape.setMeta("speedcamColShapeType", "use");
-    detectColShape.setMeta("speedcamID", speedcam.speedcamID);
-    detectColShape.setMeta("speedcamColShapeType", "detect");
-    camDict[speedcam.speedcamID] = speedcam;
+    const speedcam = createSpeedcam(player,useColShape,detectColShape,result, heading);
     alt.emitClient(null, "speedcam:spawn", speedcam.speedcamID, pos, heading);
 });
 
@@ -85,6 +81,10 @@ alt.on('playerDisconnect', (player) => {
     removeUserFromAllCams(player);
 });
 
+alt.on('playerConnect', (player) => {
+    spawnAllSpeedcamsForNewJoinedPlayer(player);
+});
+
 function removeUserFromAllCams(player){
     getValuesOfDict(camDict).forEach((speedcam) => {
         speedcam.users = speedcam.users.filter((user) => {
@@ -96,7 +96,7 @@ function removeUserFromAllCams(player){
 function deleteCamOfPlayer(player){
     getValuesOfDict(camDict).forEach((speedcam) => {
         if (speedcam.owner === player){
-            alt.emitClient(player, "speedcam:delete", speedcam.speedcamID);
+            alt.emitClient(null, "speedcam:delete", speedcam.speedcamID);
             camDict[speedcam.speedcamID].useColShape.destroy()
             camDict[speedcam.speedcamID].detectColShape.destroy()
             delete camDict[speedcam.speedcamID];
@@ -105,6 +105,26 @@ function deleteCamOfPlayer(player){
             return false;
         }
     });
+}
+
+function createSpeedcam(player, useColShape, detectColShape, result, heading){
+    const speedcam = new Speedcam(player,useColShape,detectColShape, result, heading);
+    useColShape.setMeta("speedcamID", speedcam.speedcamID);
+    useColShape.setMeta("speedcamColShapeType", "use");
+    detectColShape.setMeta("speedcamID", speedcam.speedcamID);
+    detectColShape.setMeta("speedcamColShapeType", "detect");
+    camDict[speedcam.speedcamID] = speedcam;
+    return speedcam;
+}
+
+function spawnAllSpeedcamsForNewJoinedPlayer(player){
+    getValuesOfDict(camDict).forEach((speedcam) => {
+        spawnSpeedcamForNewJoinedPlayer(player, speedcam);
+    });
+}
+
+function spawnSpeedcamForNewJoinedPlayer(player,speedcam){
+    alt.emitClient(player, "speedcam:spawn", speedcam.speedcamID, speedcam.pos, speedcam.heading);
 }
 
 function applyFuncToKeyValue(dict, func){
