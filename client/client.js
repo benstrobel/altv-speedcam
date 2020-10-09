@@ -1,9 +1,46 @@
 import * as alt from 'alt';
 import * as game from 'natives';
 
-var camDict = {}
+// ---------------------------------------- Configuration ------------------------------------------
+
+const germanOutputDict={
+  "showHintConnect": `Drücke ${speedCamInteractButton} um den Blitzer mit deinem Handy zu verbinden`,
+  "showHintDisconnect": `Drücke ${speedCamInteractButton} um den Blitzer von deinem Handy zu trennen`,
+  "showHintConnected": `Dein Handy ist jetzt mit dem Blitzer verbunden. Drücke ${speedCamInteractButton} um die Verbindung zu trennen`,
+  "showHintDisconnected": "Dein Handy ist jetzt vom Blitzer getrennt",
+  "showHintVehicleDetected0": "Fahrzeug mit Nummernschild:",
+  "showHintVehicleDetected1": "fährt",
+  "showHintVehicleDetected2": speedUnitString
+}
+
+const englishOutputDict={
+  "showHintConnect": `Press ${speedCamInteractButton} to connect your phone to the speedcam`,
+  "showHintDisconnect": `Press ${speedCamInteractButton} to disconnect your phone from the speedcam`,
+  "showHintConnected": `Your phone is now connected to the speedcam. Press ${speedCamInteractButton} to disconnect`,
+  "showHintDisconnected": "Your phone is now disconnected from the speedcam",
+  "showHintVehicleDetected0": "Vehicle with license plate:",
+  "showHintVehicleDetected1": "is driving",
+  "showHintVehicleDetected2": speedUnitString
+}
+
+const toKmH = 3.6;
+const toMpH = 2.23693;
+const kmHString = "kmh";
+const mpHString = "mph";
+
+const useKmH = true;
+
+const speedCamInteractButton = "E";
+const gtaSpeedToRealSpeedFactor = useKmH ? toKmH : toMpH;
+const speedUnitString = useKmH ? kmHString : mpHString;
+
+const languageOutputDict = englishOutputDict;
+
+const makeSpeedcamsStatic = true;
 
 // ---------------------------------------- Internal Functionality ------------------------------------------
+
+var camDict = {}
 
 alt.onServer('speedcam:spawn', (speedcamID, pos, heading) => {
   spawnSpeedCam(speedcamID, pos, heading);
@@ -15,17 +52,17 @@ alt.onServer('speedcam:delete', (speedCamID) => {
 
 alt.onServer('speedcam:showusehint', (status) => {
   if(status){
-    showNotification('Drücke E um den Blitzer von deinem Handy zu trennen', null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
+    showNotification(`${languageOutputDict["showHintDisconnect"]}`, null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
   }else{
-    showNotification('Drücke E um den Blitzer mit deinem Handy zu verbinden', null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
+    showNotification(`${languageOutputDict["showHintConnect"]}`, null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
   }
 });
 
 alt.onServer('speedcam:usecam', (status) => {
   if(status){
-    showNotification('Dein Handy ist jetzt mit dem Blitzer verbunden. Drücke E um die Verbindung zu trennen.', null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
+    showNotification(`${languageOutputDict["showHintConnected"]}`, null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
   }else{
-    showNotification('Dein Handy ist jetzt vom Blitzer getrennt.', null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
+    showNotification(`${languageOutputDict["showHintDisconnected"]}`, null, "DIA_POLICE", 7, "Speedcam", "", 0.3);
   }
   
 });
@@ -34,7 +71,7 @@ alt.onServer('speedcam:vehicleInDetectZone', (detectedEntityID, licensePlateText
   var isPlayerCurrentlyUsingCam = true;
   if(isPlayerCurrentlyUsingCam){
     var detectedvehicle = alt.Vehicle.getByID(detectedEntityID);
-    showNotification(`Fahrzeug mit Nummernschild: \"${licensePlateText}\" fährt ${Math.round(game.getEntitySpeed(detectedvehicle.scriptID)*3.6)} Km/h`, null, "DIA_POLICE", 7, "Speedcam", "", 0.5);
+    showNotification(`${languageOutputDict["showHintVehicleDetected0"]} \"${licensePlateText}\" ${languageOutputDict["showHintVehicleDetected1"]} ${Math.round(game.getEntitySpeed(detectedvehicle.scriptID)*gtaSpeedToRealSpeedFactor)} ${languageOutputDict["showHintVehicleDetected2"]}`, null, "DIA_POLICE", 7, "Speedcam", "", 0.5);
   }else{
     alt.emitServer('speedcam:notusinganymore');
   }
@@ -45,6 +82,9 @@ function spawnSpeedCam(speedcamID, pos, heading){
   const entityID = game.createObjectNoOffset(1355733718,pos.x,pos.y,pos.z);
   camDict[speedcamID] = entityID;
   game.setEntityHeading(entityID, heading);
+  if(makeSpeedcamsStatic){
+    game.freezeEntityPosition(entityID,true);
+  }
   return entityID;
 }
 
