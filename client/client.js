@@ -3,6 +3,20 @@ import * as game from 'natives';
 
 // ---------------------------------------- Configuration ------------------------------------------
 
+const speedCamInteractButton = "E";
+
+const toKmH = 3.6;
+const toMpH = 2.23693;
+const kmHString = "kmh";
+const mpHString = "mph";
+
+const useKmH = true;
+
+const gtaSpeedToRealSpeedFactor = useKmH ? toKmH : toMpH;
+const speedUnitString = useKmH ? kmHString : mpHString;
+
+const makeSpeedcamsStatic = true;
+
 const germanOutputDict={
   "showHintConnect": `Drücke ${speedCamInteractButton} um den Blitzer mit deinem Handy zu verbinden`,
   "showHintDisconnect": `Drücke ${speedCamInteractButton} um den Blitzer von deinem Handy zu trennen`,
@@ -23,20 +37,7 @@ const englishOutputDict={
   "showHintVehicleDetected2": speedUnitString
 }
 
-const toKmH = 3.6;
-const toMpH = 2.23693;
-const kmHString = "kmh";
-const mpHString = "mph";
-
-const useKmH = true;
-
-const speedCamInteractButton = "E";
-const gtaSpeedToRealSpeedFactor = useKmH ? toKmH : toMpH;
-const speedUnitString = useKmH ? kmHString : mpHString;
-
 const languageOutputDict = englishOutputDict;
-
-const makeSpeedcamsStatic = true;
 
 // ---------------------------------------- Internal Functionality ------------------------------------------
 
