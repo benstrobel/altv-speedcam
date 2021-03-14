@@ -39,12 +39,16 @@ alt.onClient('speedcam:deleteown', (player) =>{
 });
 
 alt.on('entityEnterColshape', (colshape, entity) => {
+    var speedcam = camDict[colshape.getMeta("speedcamID")];
+
+    if (!speedcam) { return }
+    
     if(colshape.hasMeta("speedcamID")&& colshape.getMeta("speedcamColShapeType") == "use" && entity instanceof alt.Player){
-        var status = camDict[colshape.getMeta("speedcamID")].users.indexOf(entity) != -1;
+        var status = speedcam.users.indexOf(entity) != -1;
         alt.emitClient(entity, "speedcam:showusehint", status);
     }
     if(colshape.hasMeta("speedcamID") && colshape.getMeta("speedcamColShapeType") == "detect" && entity instanceof alt.Vehicle){
-        var speedcam = camDict[colshape.getMeta("speedcamID")];
+        
         speedcam.users.forEach( (user) => {
             alt.emitClient(user, "speedcam:vehicleInDetectZone", entity.id, entity.numberPlateText);
         });
